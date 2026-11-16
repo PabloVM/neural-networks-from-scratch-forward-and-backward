@@ -20,8 +20,16 @@ def numerical_gradient(f, x, eps=1e-5):
         x[idx] = orig
     return grad
 
-# Step 2 - gradient_check (not yet solved)
-# TODO: implement
+# Step 2 - gradient_check
+def gradient_check(analytic_grad, numeric_grad, tol=1e-5):
+    # TODO: Return max relative error between analytic and numeric gradients.
+    analytic_grad = np.asarray(analytic_grad)
+    numeric_grad  = np.asarray(numeric_grad)
+    abs_dif = np.abs(analytic_grad - numeric_grad)
+    denominator = np.maximum(analytic_grad,numeric_grad)
+    denominator = np.maximum(denominator,tol)
+    error = abs_dif / denominator
+    return float(np.max(error))
 
 # Step 3 - make_dense (not yet solved)
 # TODO: implement
