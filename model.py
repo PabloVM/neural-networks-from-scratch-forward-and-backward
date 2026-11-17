@@ -173,6 +173,7 @@ def make_sequential(layers):
     """
     def forward(x):
       caches = []
+      y=x
       for layer in layers:
         y,cache = layer["forward"](x)
         caches.append(cache)
@@ -180,11 +181,12 @@ def make_sequential(layers):
       return y,caches
     def backward(dout,caches):
       grads_list = []
-      caches = caches.reverse()
-      for i,layer in enumerate(reversed(layers)):
-        dx,grads = layer["backward"](dout,caches[i])
+      dx=dout
+      for layer,cache in reversed(list(zip(layers,caches))):
+        dx,grads = layer["backward"](dout,cache)
         grads_list.append(grads)
         dout = dx
+      grads_list.reverse()
       return dx,grads_list
     return{
       "forward":forward,
