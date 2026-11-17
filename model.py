@@ -267,8 +267,41 @@ def train_step(model, loss_fn, optimizer, x_batch, y_batch):
 
     return loss
 
-# Step 11 - train (not yet solved)
-# TODO: implement
+# Step 11 - train
+def train(model, loss_fn, optimizer, x, y, epochs, batch_size, seed=0):
+    """Run a deterministic minibatch training loop.
+
+    Inputs:
+      model: sequential model dict with 'forward', 'backward', 'params'
+      loss_fn: callable (logits, y) -> (loss, d_logits)
+      optimizer: dict with 'step'(grads) applying in-place parameter updates
+      x: np.ndarray of shape (N, D) training features
+      y: np.ndarray of shape (N,) integer class labels
+      epochs: int, number of full passes over the data
+      batch_size: int, minibatch size
+      seed: int, RNG seed for deterministic shuffling / batching
+
+    Returns:
+      history: list[float] of length `epochs`; history[t] is the mean
+      train_step loss over minibatches in epoch t.
+      Model parameters are updated in place; shapes unchanged.
+    """
+    np.random.seed(seed)
+    history = []
+    N,D = x.shape
+    batches = -(N // -batch_size)
+    for epoch in range(epochs):
+      idx = np.arange(N)
+      np.random.shuffle(idx)
+      losses =[]
+      for b in range(batches):
+        i = idx[b*batch_size:(b+1)*batch_size]
+        x_train = x[i,:] 
+        y_train = y[i]
+        loss = train_step(model,loss_fn,optimizer,x_train,y_train)
+        losses.append(loss)
+      history.append(float(np.mean(losses)))
+    return history
 
 # Step 12 - design_network (not yet solved)
 # TODO: implement
