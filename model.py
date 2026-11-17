@@ -353,6 +353,64 @@ def design_network(input_dim, num_classes, seed=0):
 
     return model,{"accuracy":accuracy,"x":x,"y":y}
 
-# Step 13 - improve_generalization (not yet solved)
-# TODO: implement
+# Step 13 - improve_generalization
+import copy
+def improve_generalization(baseline_model_fn, x_train, y_train, x_val, y_val, seed=0):
+    """Improve held-out accuracy over an unregularized baseline.
+
+    Inputs:
+      baseline_model_fn: zero-arg callable -> fresh untrained sequential model
+        (dict with 'forward', 'backward', 'params') matching the data dims.
+      x_train, y_train: training features (N, D) and int labels (N,).
+      x_val, y_val: validation features (N_val, D) and int labels (N_val,).
+      seed: int for deterministic training.
+
+    Returns:
+      dict with keys:
+        'val_accuracy': float accuracy of the improved model on x_val/y_val
+        'baseline_val_accuracy': float val accuracy of plain unregularized SGD
+        'predictions': np.ndarray shape (N_val,) int preds from improved model
+        'model': the trained improved model
+
+    Required behavior:
+      val_accuracy > baseline_val_accuracy
+      predictions == argmax(model.forward(x_val), axis=1)
+      val_accuracy == mean(predictions == y_val)
+      predictions are non-constant (not a trivial single-class predictor)
+    """
+    loss_fn = make_loss()
+
+    baseline_model = baseline_model_fn()
+    optimizer = make_optimizer(baseline_model["params"])
+    train(baseline_model,loss_fn,optimizer,x_train,y_train,50,32,seed)
+    logits,_ = baseline_model["forward"](x_val)
+    baseline_pred = np.argmax(logits,axis=1)
+    true = np.sum(baseline_pred == y_val)
+    baseline_val_accuracy = float(true / len(y_val))
+
+    def make_wd_optim(params,lr,l):
+      def step(grads):
+        for param,grad in zip(params,grads):
+          if len(param)>0:
+              param["W"] -= lr * grad["W"]
+              param["W"] *= (1 -(lr * l))
+              param["b"] -= lr * grad["b"]
+      return{
+        "step":step
+      }
+
+    model = baseline_model_fn()
+    optimizer = make_wd_optim(model["params"],lr=0.01,l=0.1)
+    train(model,loss_fn,optimizer,x_train,y_train,50,32,seed)
+    logits,_ = model["forward"](x_val)
+    pred = np.argmax(logits,axis=1)
+    true = np.sum(pred == y_val)
+    val_accuracy = float(true / len(y_val))
+
+    return{
+      'val_accuracy': val_accuracy,
+      'baseline_val_accuracy': baseline_val_accuracy,
+      'predictions': pred,
+      'model': model
+    }
 
