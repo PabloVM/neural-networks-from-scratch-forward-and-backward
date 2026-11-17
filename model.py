@@ -115,7 +115,7 @@ def initialize_weights(in_dim, out_dim, scheme='he'):
       b: np.ndarray shape (out_dim,), near zero
     """
     match scheme:
-      case "he":
+      case _:
         param = np.sqrt(2/in_dim)
     
     W = np.random.randn(in_dim,out_dim) * param
@@ -303,8 +303,55 @@ def train(model, loss_fn, optimizer, x, y, epochs, batch_size, seed=0):
       history.append(float(np.mean(losses)))
     return history
 
-# Step 12 - design_network (not yet solved)
-# TODO: implement
+# Step 12 - design_network
+def design_network(input_dim, num_classes, seed=0):
+    """Design and train a net that solves a nonlinear classification task.
+
+    Inputs:
+      input_dim: int, feature dimension
+      num_classes: int, number of classes
+      seed: int, RNG seed for reproducibility
+
+    Returns:
+      model: trained sequential model (forward/backward/params)
+      metrics: dict with
+        'accuracy': float >= 0.90 on an evaluation set,
+        'x': np.ndarray (N, input_dim) eval features (N >= 50),
+        'y': np.ndarray (N,) integer eval labels.
+      The eval set (x, y) must not be linearly separable to high accuracy
+      (< 0.82 for a linear classifier), and the model's true accuracy on
+      it must match metrics['accuracy'] and be >= 0.90.
+    """
+    np.random.seed(seed)
+
+    #Model
+    hidden_size = 64
+    layers = []
+    layers.append(make_dense(input_dim,hidden_size,initialize_weights))
+    layers.append(make_activation())
+    for _ in range(2):
+      layers.append(make_dense(hidden_size,hidden_size,initialize_weights))
+      layers.append(make_activation())
+    layers.append(make_dense(hidden_size,num_classes,initialize_weights))
+    model = make_sequential(layers)
+    optimizer = make_optimizer(model["params"])
+    loss_fn = make_loss()
+
+    #Data Set(Concentric rings)
+    x = np.random.randn(500,input_dim)
+    r = np.linalg.norm(x,axis=1)
+    q_levels = np.linspace(0, 1, num_classes + 1)[1:-1]
+    bins = np.quantile(r, q_levels)
+    y = np.digitize(r, bins)
+
+    train(model,loss_fn,optimizer,x,y,50,32,seed)
+
+    logits,_ = model["forward"](x)
+    pred = np.argmax(logits,axis=1)
+    true = np.sum(pred == y)
+    accuracy = float(true / len(y))
+
+    return model,{"accuracy":accuracy,"x":x,"y":y}
 
 # Step 13 - improve_generalization (not yet solved)
 # TODO: implement
